@@ -1,7 +1,8 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+//Handles moving the Character Horizontally
 public class HorizontalMovement : Character
 {
     //How fast the player should move
@@ -9,7 +10,7 @@ public class HorizontalMovement : Character
     protected float speed = 500;
     //How far away from a platform the player should check to see if it is a walkable gameobject
     [SerializeField]
-    protected float distanceToCollider = .02f;
+    protected float distanceToCollider = .08f;
     //The layers the player should check and see for movement restrictions
     [SerializeField]
     protected LayerMask collisionLayer;
@@ -23,8 +24,8 @@ public class HorizontalMovement : Character
 
     void Update()
     {
-        //Sets the horizontalInput value to the float value for Input.GetAxis("Horizontal") when not taking damage
-        if (Input.GetAxis("Horizontal") != 0 && !character.takingDamage)
+        //Sets the horizontalInput value to the float value for Input.GetAxis("Horizontal") when not taking damage or climbing a ledge
+        if (Input.GetAxis("Horizontal") != 0 && !character.takingDamage && !character.grabbingLedge)
         {
             horizontalInput = Input.GetAxis("Horizontal");
         }
