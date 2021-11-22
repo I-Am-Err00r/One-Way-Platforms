@@ -86,7 +86,7 @@ public class Jump : Character
     private void FixedUpdate()
     {
         //If jump is allowed, calculates the values for velocity on the Rigidbody2D to perform a precise jump
-        PerformingJump();
+        IsJumping();
     }
 
     private void CheckForInput()
@@ -155,7 +155,7 @@ public class Jump : Character
     }
 
     //Handles Rigidbody2D calculations for the jump
-    private void PerformingJump()
+    private void IsJumping()
     {
         //Checks if character is in jump state
         if(character.isJumping)
