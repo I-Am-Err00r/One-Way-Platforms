@@ -1,4 +1,4 @@
-﻿/*This script is part of a larger solution, but can be used as a standalone
+/*This script is part of a larger solution, but can be used as a standalone
  * script; if you want to use this as a standalone script, make sure everything
  * that is commented off in psuedocode is no longer commented out, and that
  * you delete the Initialization method found within this script, as well as
@@ -31,8 +31,10 @@ public class LedgeLocator : Character
     private float animationTime = .5f;
     //Bool that determines if the Character is falling off a platform and no longer hanging; needs to be set so there is a tiny delay after falling so the Character doesn't grab onto the platform again
     private bool falling;
-    //
+    //Bool that stops character from grabbing the same ledge they just dropped from
     private bool moved;
+    //Bool that makes sure the LedgeClimbing animation doesn't play too much
+    private bool climbing;
 
     /*
     //These are extra variables that are setup in the Character script that this script inherits from; if you are using your own solution and don't want to use a Character script, then these variables will need to be established in order to get the logic in this script to work
@@ -140,13 +142,15 @@ public class LedgeLocator : Character
                 rb.velocity = Vector2.zero;
                 //Turns off gravity for the Character while hanging from platform
                 rb.bodyType = RigidbodyType2D.Kinematic;
-                GetComponent<HorizontalMovement>().enabled = false;
+                //I've set up my HorizontalMovement script to not run the movement logic if true, but if you're not sure how to set that up, use the line below
+                //GetComponent<HorizontalMovement>().enabled = false;
             }
             else
             {
                 //Turns on the gravity again if the Character is no longer hanging from ledge
                 rb.bodyType = RigidbodyType2D.Dynamic;
-                GetComponent<HorizontalMovement>().enabled = true;
+                //I've set up my HorizontalMovement script to not run the movement logic if true, but if you're not sure how to set that up, use the line below
+                //GetComponent<HorizontalMovement>().enabled = true;
             }
         }
     }
@@ -155,8 +159,10 @@ public class LedgeLocator : Character
     protected virtual void LedgeHanging()
     {
         //If Character is Grabbing ledge and the up button is pressed
-        if (character.grabbingLedge && Input.GetAxis("Vertical") > 0)
+        if (character.grabbingLedge && Input.GetAxis("Vertical") > 0 && !climbing)
         {
+            //Stops the coroutine to allow the player to climb the ledge from playing multiple times when climbing
+            climbing = true;
             //Stops playing the LedgeHanging bool
             anim.SetBool("LedgeHanging", false);
             //Makes sure the Character is facing right
@@ -187,7 +193,8 @@ public class LedgeLocator : Character
             falling = true;
             //Turns gravity back on for the Character
             rb.bodyType = RigidbodyType2D.Dynamic;
-            GetComponent<HorizontalMovement>().enabled = true;
+            //I've set up my HorizontalMovement script to not run the movement logic if true, but if you're not sure how to set that up, use the line below
+            //GetComponent<HorizontalMovement>().enabled = true;
             //Runs the NotFalling method half a second later to make sure the falling bool gets set back to false quickly
             Invoke("NotFalling", .5f);
         }
@@ -216,6 +223,8 @@ public class LedgeLocator : Character
         ledge = null;
         //Makes sure the moved bool is false just in case down
         moved = false;
+        //Allows this coroutine to play again and prevent bad transitions
+        climbing = false;
         //Gets the Character out of the GrabbingLedge state
         character.grabbingLedge = false;
         //Stops playing the LedgeClimbing animation
