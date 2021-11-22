@@ -1,8 +1,8 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
-using UnityEditor;
 using UnityEngine;
 
+//Handles all Jump logic for Character
 public class Jump : Character
 {
     //Total number of jumps allowed
