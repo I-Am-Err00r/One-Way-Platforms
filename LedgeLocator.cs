@@ -35,6 +35,7 @@ public class LedgeLocator : Character
     private bool moved;
     //Bool that makes sure the LedgeClimbing animation doesn't play too much
     private bool climbing;
+    private Jump jump;
 
     /*
     //These are extra variables that are setup in the Character script that this script inherits from; if you are using your own solution and don't want to use a Character script, then these variables will need to be established in order to get the logic in this script to work
@@ -50,6 +51,7 @@ public class LedgeLocator : Character
         col = GetComponent<Collider2D>();
         rb = GetComponent<Rigidbody2D>();
         anim = GetComponent<Animator>();
+        jump = GetComponent<Jump>();
         if (clip != null)
         {
             animationTime = clip.length;
@@ -68,6 +70,7 @@ public class LedgeLocator : Character
             //If there is an AnimationClip plugged into the clip variable, then it overrides the private float animationTime to whatever the length of the animation in the clip variable is
             animationTime = clip.length;
         }
+        jump = GetComponent<Jump>();
     }
 
     //Using the FixedUpdate because it works better with Rigidbody values so it's collision is accurate with whatever calculations are performed by Rigidbody
@@ -83,7 +86,7 @@ public class LedgeLocator : Character
     protected virtual void CheckForLedge()
     {
         //Determines that the Character is currently not falling after hanging from a ledge; this doesn't mean the Character isn't falling, but hasn't just pressed the input to allow the Character to fall off a platform when it was just previously hanging from it
-        if (!falling)
+        if (!falling && jump.passedThroughPlatform == null)
         {
             //This is a universal way to see if the Character sprite is facing right
             if (transform.localScale.x > 0)
@@ -100,7 +103,7 @@ public class LedgeLocator : Character
                     //Sets a temprorary Collider2D variable to help clean up code and optimize
                     Collider2D ledgeCollider = ledge.GetComponent<Collider2D>();
                     //Checks to see top of the Character collider is below the top of the ledgeCollider and also that if the platform happens to be a one way platform that the Character isn't in the middle of the platform so it snaps to the ledge more accurately or allows the Charcter to pass through if the platform is a one way platform
-                    if (col.bounds.max.y < ledgeCollider.bounds.max.y && col.bounds.max.y > ledgeCollider.bounds.center.y && col.bounds.min.x < ledgeCollider.bounds.min.x)
+                    if (col.bounds.max.y < ledgeCollider.bounds.max.y && col.bounds.max.y > ledgeCollider.bounds.center.y && col.bounds.min.x < ledgeCollider.bounds.min.x && rb.velocity.y < 0)
                     {
                         //Sets the GrabbingLedge bool to true
                         character.grabbingLedge = true;
@@ -124,7 +127,7 @@ public class LedgeLocator : Character
                     //Sets a temprorary Collider2D variable to help clean up code and optimize
                     Collider2D ledgeCollider = ledge.GetComponent<Collider2D>();
                     //Checks to see top of the Character collider is below the top of the ledgeCollider and also that if the platform happens to be a one way platform that the Character isn't in the middle of the platform so it snaps to the ledge more accurately or allows the Charcter to pass through if the platform is a one way platform
-                    if (col.bounds.max.y < ledgeCollider.bounds.max.y && col.bounds.max.y > ledgeCollider.bounds.center.y && col.bounds.max.x > ledgeCollider.bounds.max.x)
+                    if (col.bounds.max.y < ledgeCollider.bounds.max.y && col.bounds.max.y > ledgeCollider.bounds.center.y && col.bounds.max.x > ledgeCollider.bounds.max.x && rb.velocity.y < 0)
                     {
                         //Sets the GrabbingLedge bool to true
                         anim.SetBool("LedgeHanging", true);
@@ -169,13 +172,13 @@ public class LedgeLocator : Character
             if (transform.localScale.x > 0)
             {
                 //Method that runs to have the Character Lerp to top of platform based on the animationTime variable
-                StartCoroutine(ClimbingLedge(new Vector2(transform.position.x + climbingHorizontalOffset, ledge.GetComponent<Collider2D>().bounds.max.y + col.bounds.extents.y), animationTime - .3f));
+                StartCoroutine(ClimbingLedge(new Vector2(transform.position.x + climbingHorizontalOffset, ledge.GetComponent<Collider2D>().bounds.max.y + col.bounds.extents.y), animationTime));
             }
             //Makes sure the Character is facing left
             else
             {
                 //Method that runs to have the Character Lerp to top of platform based on the animationTime variable
-                StartCoroutine(ClimbingLedge(new Vector2(transform.position.x - climbingHorizontalOffset, ledge.GetComponent<Collider2D>().bounds.max.y + col.bounds.extents.y), animationTime - .3f));
+                StartCoroutine(ClimbingLedge(new Vector2(transform.position.x - climbingHorizontalOffset, ledge.GetComponent<Collider2D>().bounds.max.y + col.bounds.extents.y), animationTime));
             }
         }
         //If Character is Grabbing ledge and the down button is pressed
