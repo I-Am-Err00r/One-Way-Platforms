@@ -26,15 +26,14 @@ public class Jump : Character
     //How fast the player can fall; this prevents the vertical velocity from decreasing the longer the player falls
     [SerializeField]
     private float maxFallSpeed = -20;
+    [SerializeField]
+    private float downwardJumpingFallSpeed = -30;
     //How fast the player's vertical velocity needs to be before considered falling
     [SerializeField]
     private float fallSpeed = 3;
     //How much the gravity should be changed for certain things
     [SerializeField]
     private float gravityMultipler = 4;
-    //How much time needs to wait for player to pass through one way platform before collisions turn back on
-    [SerializeField]
-    private float delay = .5f;
     //What objects the player should react to as ground
     [SerializeField]
     private LayerMask collisionLayer;
@@ -50,13 +49,12 @@ public class Jump : Character
     //The number of jumps the player can perform after the initial jump
     private int numberOfJumpsLeft;
 
+    public Collider2D passedThroughPlatform;
+    public bool downJumpPressed;
+
     //If holding down and pressing jump, this performs a downward jump
-    [HideInInspector]
-    public bool downwardJump;
-    //Allows the player to naturally fall through a one way platform rather than downward jump
-    [HideInInspector]
-    public bool fallingJump;
-    private OneWayPlatform[] oneWayPlatforms;
+    private bool downwardJumping;
+    //private OneWayPlatform[] oneWayPlatforms;
 
     //Start method called in the Character script
     protected override void Initializtion()
@@ -69,7 +67,7 @@ public class Jump : Character
         //Sets the total number of jumps left to the max value
         numberOfJumpsLeft = maxJumps;
         //Sets the array of all the one way platforms in the scene so the player can pass through them if downward jumping
-        oneWayPlatforms = FindObjectsOfType<OneWayPlatform>();
+        //oneWayPlatforms = FindObjectsOfType<OneWayPlatform>();
     }
 
 
@@ -87,6 +85,8 @@ public class Jump : Character
     {
         //If jump is allowed, calculates the values for velocity on the Rigidbody2D to perform a precise jump
         IsJumping();
+        //Checks if holding down while jumping, performs a downward jump to get to ground quicker
+        DownwardJump();
     }
 
     private void CheckForInput()
@@ -105,33 +105,32 @@ public class Jump : Character
         }
         else
             jumpHeld = false;
-        //Checks if trying to perform a downward jump
-        if (Input.GetAxis("Vertical") < 0 && jumpHeld)
+        //Checks to see if pressing down while also pressing the jump button
+        if(Input.GetAxis("Vertical") < 0 && jumpHeld)
         {
-            fallingJump = true;
-            if(!character.isGrounded)
-            {
-                downwardJump = true;
-                for (int i = 0; i < oneWayPlatforms.Length; i++)
-                {
-                    Physics2D.IgnoreCollision(col, oneWayPlatforms[i].GetComponent<Collider2D>(), true);
-                    StartCoroutine(TurnOnCollider(oneWayPlatforms[i].GetComponent<Collider2D>()));
-                }
-            }
+            downJumpPressed = true;
         }
         else
         {
-            fallingJump = false;
+            downJumpPressed = false;
+        }
+        //Checks to see if the player is currently not in a grounded state while downJumpPressed
+        if ((!character.isGrounded) && downJumpPressed)
+        {
+            //Performs a downward jump to allow the player to fall faster
+            downwardJumping = true;
+            //Checks to see if there is a one way platform beneath the player so the player can automatically pass through it instead of colliding with it
+            CheckForPlatformBelow();
         }
     }
 
     private void CheckForJump()
     {
         //Checks if the jump button is pressed and not pressing down
-        if (jumpPressed && !fallingJump)
+        if (!downJumpPressed && jumpPressed)
         {
             //If the character is not grounded and hasn't performed an initial jump than this is likely because the player stepped off a ledge
-            if (!character.isGrounded && numberOfJumpsLeft == maxJumps)
+            if ((!character.isGrounded) && numberOfJumpsLeft == maxJumps)
             {
                 //Doesn't allow the jump and returns out of method
                 character.isJumping = false;
@@ -171,12 +170,6 @@ public class Jump : Character
             //Sets the vertical velocity to the jump speed limit
             rb.velocity = new Vector2(rb.velocity.x, maxJumpSpeed);
         }
-        //Checks if holding down while jumping, performs a downward jump to get to ground quicker
-        if(downwardJump)
-        {
-            //Shoots player down to ground quicker
-            DownwardJump();
-        }
         //Handles fall logic
         Falling();
     }
@@ -213,24 +206,30 @@ public class Jump : Character
     //Jump that pushes player downwards for quicker falling
     private void DownwardJump()
     {
-        //Pushes player down instead of up for a downward jump
-        rb.AddForce(Vector2.down * jumpForce);
+        if (downwardJumping)
+        {
+            //Pushes player down instead of up for a downward jump
+            rb.velocity = new Vector2(rb.velocity.y, downwardJumpingFallSpeed);
+        }
     }
 
     //Manages fall speeds and if the character is in the falling state
     private void Falling()
     {
-        //If character is not currently jumping up and the vertical velocity is officially in the falling state
-        if(!character.isJumping && rb.velocity.y < fallSpeed)
+        if (!downwardJumping)
         {
-            //Pushes the player down a bit faster to perform a more specific jump often found in platformers and not have such a floaty jump
-            rb.gravityScale = gravityMultipler;
-        }
-        //If the vertical velocity is less than the fastest the player should be falling
-        if(rb.velocity.y < maxFallSpeed)
-        {
-            //Sets vertical velocity to the maximum speed allowed to fall
-            rb.velocity = new Vector2(rb.velocity.x, maxFallSpeed);
+            //If character is not currently jumping up and the vertical velocity is officially in the falling state
+            if (!character.isJumping && rb.velocity.y < fallSpeed)
+            {
+                //Pushes the player down a bit faster to perform a more specific jump often found in platformers and not have such a floaty jump
+                rb.gravityScale = gravityMultipler;
+            }
+            //If the vertical velocity is less than the fastest the player should be falling
+            if (rb.velocity.y < maxFallSpeed)
+            {
+                //Sets vertical velocity to the maximum speed allowed to fall
+                rb.velocity = new Vector2(rb.velocity.x, maxFallSpeed);
+            }
         }
     }
 
@@ -240,18 +239,31 @@ public class Jump : Character
         //Method found in the Character script that checks if the player is touching a ground platform and if the character is not in a jumping state
         if (CollisionCheck(Vector2.down, distanceToCollider, collisionLayer) && !character.isJumping)
         {
-            //Player enters a grounded state
-            character.isGrounded = true;
-            //Sets a parameter on Animator component to allow ground based animations to play
-            anim.SetBool("Grounded", true);
-            //Resest the numberOfJumpsLeft back to max value
-            numberOfJumpsLeft = maxJumps;
-            //Resets gravity back to original value
-            rb.gravityScale = originalGravity;
-            //Turns off the downwardJump bool
-            if (downwardJump)
+            //Checks to see if there is a Collider2D stored in the passedThroughPlatform variable as well as if the player is beneath the passedThroughPlatform middle point
+            if(passedThroughPlatform != null && col.bounds.max.y < passedThroughPlatform.bounds.center.y)
             {
-                downwardJump = false;
+                //Turns on the collision for the player and the passedThroughPlatform
+                Physics2D.IgnoreCollision(col, passedThroughPlatform, false);
+                //Sets the passedThroughPlatform back to null
+                passedThroughPlatform = null;
+            }
+            //First checks to see if the player isn't currently going through a platform
+            if (passedThroughPlatform == null && rb.velocity.y == 0)
+            {
+                //Checks to see if there is no vertical velocity which would mean the player is standing on ground
+                if (rb.velocity.y == 0)
+                {
+                    //Player enters a grounded state
+                    character.isGrounded = true;
+                    //Sets the Animator to the Grounded state
+                    anim.SetBool("Grounded", true);
+                    //Turns off the downwardJumping bool so the player isn't being forced down fast anymore
+                    downwardJumping = false;
+                    //Resest the numberOfJumpsLeft back to max value
+                    numberOfJumpsLeft = maxJumps;
+                    //Resets gravity back to original value
+                    rb.gravityScale = originalGravity;
+                }
             }
         }
         //If the above if statement returns false, then character is not touching platform or is in a jumping state
@@ -266,9 +278,17 @@ public class Jump : Character
         }
     }
 
-    protected virtual IEnumerator TurnOnCollider(Collider2D platformCollider)
+    private void CheckForPlatformBelow()
     {
-        yield return new WaitForSeconds(delay);
-        Physics2D.IgnoreCollision(col, platformCollider.GetComponent<Collider2D>(), false);
+        //Performs a raycast to see if a platform layer is beneath the player
+        RaycastHit2D hit = Physics2D.Raycast(new Vector2(col.bounds.center.x, col.bounds.min.y), Vector2.down, Mathf.Infinity, collisionLayer);
+        //Checks to see if the colliding platform beneath the player is a one way platform and isn't already passing through a one way platform
+        if (hit.collider.GetComponent<OneWayPlatform>() && !passedThroughPlatform)
+        {
+            //Ignores the current platform that the player should pass through because the player is downward jumping from above the platform
+            Physics2D.IgnoreCollision(col, hit.collider, true);
+            //Sets the private gameobject passedThroughPlatform to the current raycast hit platform
+            passedThroughPlatform = hit.collider;
+        }
     }
 }
