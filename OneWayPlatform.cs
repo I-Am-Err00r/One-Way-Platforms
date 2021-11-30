@@ -6,15 +6,13 @@ using UnityEngine;
 public class OneWayPlatform : MonoBehaviour
 {
     //Enum that sets up different types for one way platforms
-    [SerializeField]
-    protected enum OneWayPlatforms { GoingUp, GoingDown, Both }
-    [SerializeField]
-    protected OneWayPlatforms type;
-    //The collider on the platform
-    private Collider2D col;
+    public enum OneWayPlatforms { GoingUp, GoingDown, Both }
+    public OneWayPlatforms type = OneWayPlatforms.Both;
     //A short delay to allow the player to collide with the platform again
     [SerializeField]
     private float delay = .5f;
+    //The collider on the platform
+    private Collider2D col;
     //Reference of the player
     private GameObject player;
     //Reference to the collider on the player
@@ -43,8 +41,8 @@ public class OneWayPlatform : MonoBehaviour
             {
                 //Sets the player as a gameobject that should ignore the platform collider so the player can pass through
                 Physics2D.IgnoreCollision(playerCollider, col, true);
-                //Sets the jump passingThroughPlatform bool to true so it doesn't enter the grounded state while passing through it
-                player.GetComponent<Jump>().passedThroughPlatform = col;
+                //Sets the jump passingThroughPlatform bool to true so it doesn't enter the grounded state while passing through it; you may not need this line of code for your solution
+                player.GetComponent<Jump>().passingThroughPlatform = true;
                 //Runs coroutine to allow the player to collide with the platform again
                 StartCoroutine(StopIgnoring());
             }
@@ -55,7 +53,7 @@ public class OneWayPlatform : MonoBehaviour
     private void OnCollisionStay2D(Collision2D collision)
     {
         //Checks to see if the gameobject colliding with the platform is the player
-        if (collision.gameObject == player)
+        if (collision.gameObject == player) 
         {
             //Checks to see if the Input allows for a downward jump and that the player is actually on top of the one way platform
             if (player.GetComponent<Jump>().downJumpPressed && playerCollider.bounds.min.y > col.bounds.center.y && (type == OneWayPlatforms.Both || type == OneWayPlatforms.GoingDown))
@@ -63,9 +61,7 @@ public class OneWayPlatform : MonoBehaviour
                 //Sets the player as a gameobject that should ignore the platform collider so the player can pass through
                 Physics2D.IgnoreCollision(playerCollider, col, true);
                 //Sets the jump passingThroughPlatform bool to true so it doesn't enter the grounded state while passing through it
-                player.GetComponent<Jump>().passedThroughPlatform = col;
-                //Sets the animator Grounded bool to false so it can enter the falling animation
-                player.GetComponent<Animator>().SetBool("Grounded", false);
+                player.GetComponent<Jump>().passingThroughPlatform = true;
                 //Runs coroutine to allow the player to collide with the platform again
                 StartCoroutine(StopIgnoring());
             }
@@ -79,7 +75,7 @@ public class OneWayPlatform : MonoBehaviour
         yield return new WaitForSeconds(delay);
         //Sets the player as a gameobject that should collide the platform collider so the player can stand on it again
         Physics2D.IgnoreCollision(playerCollider, col, false);
-        //Sets the jump passingThroughPlatform bool to false so the player can enter the grounded state again
-        player.GetComponent<Jump>().passedThroughPlatform = null;
+        //Sets the jump passingThroughPlatform bool to false so the player can enter the grounded state
+        player.GetComponent<Jump>().passingThroughPlatform = false;
     }
 }
