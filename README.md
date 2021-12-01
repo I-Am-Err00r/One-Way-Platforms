@@ -14,3 +14,5 @@ Ledge, and LedgeLocator scripts. As mentioned, attatch the OneWayPlatform and Le
 one way platforms, and attach the LedgeLocator script to the player; default values for LedgeLocator are setup in script already, but
 for a better understanding of how the LedgeLocator script works, visit my YouTube video that goes over in detail how everything works:
 https://youtu.be/88NEMnzxwBs
+
+For a playlist that goes over all my 2D platformer videos, click here: https://www.youtube.com/playlist?list=PLEPcs9R3SIZ5URg0-dCnOn5xsJYg5SkBB
