@@ -48,6 +48,8 @@ public class Jump : Character
     private float originalGravity;
     //The number of jumps the player can perform after the initial jump
     private int numberOfJumpsLeft;
+    //Very brief delay so OnCollisionStay2D method can still detect input
+    private float inputDelay;
 
     //A bool that checks to see if the player is currently passing through a one way platform
     [HideInInspector]
@@ -73,7 +75,6 @@ public class Jump : Character
         //Sets the total number of jumps left to the max value
         numberOfJumpsLeft = maxJumps;
     }
-
 
     private void Update()
     {
@@ -110,28 +111,46 @@ public class Jump : Character
         else
             jumpHeld = false;
         //Checks to see if pressing down while also pressing the jump button
-        if(Input.GetAxis("Vertical") < 0 && jumpHeld)
+        if (Input.GetAxis("Vertical") < 0 && jumpPressed)
         {
+            //Resets inputDelay back to 0
+            inputDelay = 0;
             downJumpPressed = true;
         }
         else
-            downJumpPressed = false;
+        {
+            //Checks to see if inputDelay is less than .05f
+            if(inputDelay < .02f)
+            {
+                //Adds the amount of time since last frame to the inputDelay value
+                inputDelay += Time.deltaTime;
+            }
+            //If inputDelay is greater than .05f
+            if (inputDelay >= .02f)
+            {
+                downJumpPressed = false;
+            }
+        }
         //Checks to see if the player is currently not in a grounded state while downJumpPressed
-        if ((!character.isGrounded) && Input.GetAxis("Vertical") < 0 && jumpPressed)
+        if (!character.isGrounded && Input.GetAxis("Vertical") < 0 && jumpPressed)
         {
             //Performs a downward jump to allow the player to fall faster
             downwardJumping = true;
             //Handles the logic to propel the player down
             DownwardJump();
-            //Checks to see if there is a one way platform beneath the player so the player can automatically pass through it instead of colliding with it
-            CheckForPlatformBelow();
+            //Makes sure the player is currently passing through a platform
+            if (!passingThroughPlatform)
+            {
+                //Checks to see if there is a one way platform beneath the player so the player can automatically pass through it instead of colliding with it
+                CheckForPlatformBelow();
+            }
         }
     }
 
     private void CheckForJump()
     {
         //Checks if the jump button is pressed and not pressing down
-        if (!downJumpPressed && jumpPressed)
+        if (!downJumpPressed && !downwardJumping && jumpPressed)
         {
             //If the character is not grounded and hasn't performed an initial jump than this is likely because the player stepped off a ledge
             if ((!character.isGrounded) && numberOfJumpsLeft == maxJumps)
@@ -258,12 +277,12 @@ public class Jump : Character
                 character.isGrounded = true;
                 //Sets the Animator to the Grounded state
                 anim.SetBool("Grounded", true);
-                //Turns off the downwardJumping bool so the player isn't being forced down fast anymore
-                downwardJumping = false;
                 //Resest the numberOfJumpsLeft back to max value
                 numberOfJumpsLeft = maxJumps;
                 //Resets gravity back to original value
                 rb.gravityScale = originalGravity;
+                //Turns off the downwardJumping bool so the player isn't being forced down fast anymore
+                downwardJumping = false;
             }
         }
         //If the above if statement returns false, then character is not touching platform or is in a jumping state
@@ -278,12 +297,13 @@ public class Jump : Character
         }
     }
 
-    private void CheckForPlatformBelow()
+    private void CheckForPlatformBelow() 
     {
         //Performs a raycast to see if a platform layer is beneath the player
         RaycastHit2D hit = Physics2D.Raycast(new Vector2(col.bounds.center.x, col.bounds.min.y), Vector2.down, Mathf.Infinity, collisionLayer);
         //Checks to see if the colliding platform beneath the player is a one way platform and allows the player to pass through it based on the one way platform type
-        if (hit.collider.GetComponent<OneWayPlatform>() && (hit.collider.GetComponent<OneWayPlatform>().type == OneWayPlatform.OneWayPlatforms.Both || hit.collider.GetComponent<OneWayPlatform>().type == OneWayPlatform.OneWayPlatforms.GoingDown))
+        if (hit.collider.GetComponent<OneWayPlatform>()
+            && (hit.collider.GetComponent<OneWayPlatform>().type != OneWayPlatform.OneWayPlatforms.GoingUp))
         {
             //Sets the private gameobject passedThroughPlatform to the current raycast hit platform
             nextPlatform = hit.collider;
