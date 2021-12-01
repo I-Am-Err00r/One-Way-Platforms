@@ -29,7 +29,6 @@ public class OneWayPlatform : MonoBehaviour
         playerCollider = player.GetComponent<Collider2D>();
     }
 
-
     //Unity event that gets called once everytime something collides with the platform
     private void OnCollisionEnter2D(Collision2D collision)
     {
@@ -37,7 +36,7 @@ public class OneWayPlatform : MonoBehaviour
         if (collision.gameObject == player)
         {
             //Checks to see if player is not above the platform so the player can stand on the platform while jumping and then checks to see if the platform will allow the player to jump up through it;
-            if (playerCollider.bounds.min.y < col.bounds.center.y && (type == OneWayPlatforms.Both || type == OneWayPlatforms.GoingUp))
+            if (playerCollider.bounds.min.y < col.bounds.center.y && type != OneWayPlatforms.GoingDown)
             {
                 //Sets the player as a gameobject that should ignore the platform collider so the player can pass through
                 Physics2D.IgnoreCollision(playerCollider, col, true);
@@ -56,7 +55,7 @@ public class OneWayPlatform : MonoBehaviour
         if (collision.gameObject == player) 
         {
             //Checks to see if the Input allows for a downward jump and that the player is actually on top of the one way platform
-            if (player.GetComponent<Jump>().downJumpPressed && playerCollider.bounds.min.y > col.bounds.center.y && (type == OneWayPlatforms.Both || type == OneWayPlatforms.GoingDown))
+            if (player.GetComponent<Jump>().downJumpPressed && playerCollider.bounds.min.y > col.bounds.center.y && type != OneWayPlatforms.GoingUp)
             {
                 //Sets the player as a gameobject that should ignore the platform collider so the player can pass through
                 Physics2D.IgnoreCollision(playerCollider, col, true);
