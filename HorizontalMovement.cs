@@ -88,10 +88,13 @@ public class HorizontalMovement : Character
     private void SpeedModifier()
     {
         //Long if statement that checks to see if character is jumping or falling and running into a wall
-        if((rb.velocity.x > 0 && CollisionCheck(Vector2.right, distanceToCollider, collisionLayer)) || (rb.velocity.x < 0 && CollisionCheck(Vector2.left, distanceToCollider, collisionLayer)) && !character.isGrounded)
+        if((rb.velocity.x > 0 && CollisionCheck(Vector2.right, distanceToCollider, collisionLayer)) 
+            || (rb.velocity.x < 0 && CollisionCheck(Vector2.left, distanceToCollider, collisionLayer)) 
+            && !character.isGrounded)
         {
             //If that wall or platform is a one way platform, then do nothing
-            if(currentPlatform.GetComponent<OneWayPlatform>())
+            if(currentPlatform.GetComponent<OneWayPlatform>() 
+                && currentPlatform.GetComponent<OneWayPlatform>().type != OneWayPlatform.OneWayPlatforms.GoingDown)
             {
                 return;
             }
